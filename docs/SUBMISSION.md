@@ -14,4 +14,4 @@ The coding agent implemented the interface, backend, tests, and documentation. I
 
 Real Google Calendar consent/event creation is not separately confirmed in the verification record. Membership removal and recurring reviews are intentionally outside scope. Next I would verify Calendar explicitly, add reconciliation for uncertain writes, and move long generation into background jobs.
 
-The repository is private; ensure the reviewers have access before submitting. Detailed evidence and limits: [VERIFICATION.md](VERIFICATION.md).
+The repository is public and can be reviewed without an invitation. Decision rooms remain private and require authenticated membership. Detailed evidence and limits: [VERIFICATION.md](VERIFICATION.md).
