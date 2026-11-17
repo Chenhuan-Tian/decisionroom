@@ -1,7 +1,7 @@
 import type { ActionTools } from 'deepspace/worker'
 import { DomainError, ensure, text, safeUrl, inputSignature, parseComparison } from './domain.ts'
-import type { Evidence, Invitation, Member, Room, Row, Snapshot } from './domain.ts'
-import { SEARCH_ENDPOINT, COMPLETION_ENDPOINT, MODEL, COMPARISON_PROMPT } from './integrations.ts'
+import type { Evidence, Invitation, Member, Review, Room, Row, Snapshot } from './domain.ts'
+import { SEARCH_ENDPOINT, COMPLETION_ENDPOINT, CALENDAR_ENDPOINT, MODEL, COMPARISON_PROMPT } from './integrations.ts'
 
 type Context = { userId: string; params: Record<string, unknown>; tools: ActionTools }
 type Handler = (ctx: Context) => Promise<unknown>
@@ -42,6 +42,11 @@ const handlers: Record<string, Handler> = {
     ensure(Array.isArray(ctx.params.options) && ctx.params.options.length >= 2 && ctx.params.options.length <= 3, 'Choose two or three options.')
     const names = ctx.params.options.map(n => text(n, 'Option', 80))
     ensure(new Set(names.map(n => n.toLowerCase())).size === names.length, 'Option names must be distinct.')
+    const existing = ok(await ctx.tools.query<Room>('rooms', { where: { teamId: id }, limit: 1 })).records[0]
+    if (existing) {
+      ensure(existing.data.ownerId === ctx.userId, 'Room not found or access denied.')
+      return { roomId: id }
+    }
     const own = ok(await ctx.tools.query<Room>('rooms', { where: { ownerId: ctx.userId }, limit: 10 })).records
     if (!own.some(r => r.recordId === id)) ensure(own.length < 5, 'This evaluation build allows five rooms per account.')
     else return { roomId: id }
@@ -121,7 +126,7 @@ const handlers: Record<string, Handler> = {
     ensure(existing.length < 5, 'This room has reached its five-comparison evaluation limit. You can still decide manually.')
     const result = await ctx.tools.integration<{ choices: { message: { content: string } }[] }>(COMPLETION_ENDPOINT, {
       model: MODEL, messages: [{ role: 'system', content: COMPARISON_PROMPT }, { role: 'user', content: JSON.stringify({ question: room.data.question, constraints: room.data.constraints,
-        options: room.data.options, evidence: evidence.map(e => ({ id: e.recordId, ...e.data })) }) }], response_format: { type: 'json_object' },
+        options: room.data.options, evidence: evidence.map(e => ({ id: e.recordId, ...e.data })) }) }], max_tokens: 6000,
     })
     if (!result.success) throw new DomainError('The comparison could not be generated. Your evidence is safe; retry or decide manually.')
     const comparison = parseComparison(result.data?.choices?.[0]?.message?.content, room.data, evidence)
@@ -143,9 +148,47 @@ const handlers: Record<string, Handler> = {
     ok(await ctx.tools.update('rooms', room.recordId, { status: 'decided', decision: optionId, rationale, snapshotId, decidedAt: new Date().toISOString() }))
     return { roomId: room.recordId }
   },
+  async scheduleReview(ctx) {
+    const room = await roomAccess(ctx, true)
+    ensure(room.data.status === 'decided', 'Record a decision before scheduling its review.')
+    const previous = (await list<Review>(ctx.tools, 'reviews', room.recordId))[0]
+    if (previous?.data.status === 'created') return { created: true, eventUrl: previous.data.eventUrl }
+    ensure(!previous || previous.data.status === 'connection_required', 'Calendar outcome uncertain. Check Google Calendar; automatic retries are disabled.')
+    const rawStart = text(ctx.params.startsAt, 'Review time', 50)
+    const start = new Date(rawStart)
+    ensure(Number.isFinite(start.getTime()) && start.getTime() > Date.now() && start.getTime() < Date.now() + 366 * 86400000, 'Choose a future date within the next year.')
+    const startsAt = start.toISOString()
+    const reviewId = room.recordId
+    ok(await ctx.tools.create('reviews', { teamId: room.recordId, userId: ctx.userId, startsAt, status: 'pending', eventUrl: '' }, reviewId))
+    const result = await ctx.tools.integration<Record<string, unknown>>(CALENDAR_ENDPOINT, {
+      calendarId: 'primary', title: `Review: ${room.data.question}`, start: startsAt,
+      end: new Date(start.getTime() + 30 * 60000).toISOString(), allDay: false, sendUpdates: 'none',
+      description: `Decision: ${room.data.options.find(o => o.id === room.data.decision)?.name}\n\n${room.data.rationale}\n\nReview whether the original constraints and evidence still hold.`,
+    })
+    if (!result.success) {
+      ok(await ctx.tools.update('reviews', reviewId, { status: 'uncertain' }))
+      throw new DomainError('Calendar did not confirm creation. Check your calendar before any further action; automatic retries are disabled to avoid duplicates.')
+    }
+    if (result.data.requiresOAuth === true) {
+      const authUrl = safeUrl(result.data.authUrl)
+      const host = new URL(authUrl).hostname
+      ensure(host === 'accounts.google.com' || host === 'deep.space' || host.endsWith('.deep.space'), 'Unexpected Google connection URL.')
+      ok(await ctx.tools.update('reviews', reviewId, { status: 'connection_required' }))
+      return { requiresOAuth: true, authUrl }
+    }
+    const event = (result.data.event ?? result.data) as Record<string, unknown>
+    if (typeof event.id !== 'string' || !event.id) {
+      ok(await ctx.tools.update('reviews', reviewId, { status: 'uncertain' }))
+      throw new DomainError('Google Calendar did not return an event ID. Check your calendar before trying anything else.')
+    }
+    let eventUrl = ''
+    try { eventUrl = safeUrl(event.htmlLink) } catch { /* Some providers return only an ID. */ }
+    ok(await ctx.tools.update('reviews', reviewId, { status: 'created', eventUrl }))
+    return { created: true, eventUrl }
+  },
 }
 
-export const actionNames = [...Object.keys(handlers), 'scheduleReview']
+export const actionNames = [...Object.keys(handlers)]
 export async function execute(name: string, ctx: Context): Promise<{ success: true; data: unknown } | { success: false; error: string }> {
   try {
     ensure(Object.hasOwn(handlers, name), 'Unknown action.')

@@ -1,4 +1,7 @@
 node_modules
+.research
+.local-runtime
+docs/verification.local.md
 dist
 .wrangler
 .wrangler.deepspace.*.toml

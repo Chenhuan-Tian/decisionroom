@@ -16,14 +16,29 @@ export class DecisionCoordinator {
       const userId = request.headers.get('X-Verified-User')
       const token = request.headers.get('Authorization')?.slice(7)
       if (!userId || !token) return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-      // Short evaluation budget per room, stored durably before paid requests.
-      if (name === 'search' || name === 'compare') {
-        const key = `attempts:${name}`
-        const count = await this.state.storage.get<number>(key) ?? 0
-        if (count >= 8) return Response.json({ success: false, error: 'This room has reached its integration attempt limit. Manual evidence and decisions still work.' })
-        await this.state.storage.put(key, count + 1)
-      }
       const tools = createActionTools(this.env, userId, token)
+      const callIntegration = tools.integration.bind(tools)
+      tools.integration = async <T>(endpoint: string, body?: unknown) => {
+        if (endpoint === 'google/calendar-create-event') {
+          const previous = await this.state.storage.get<{ status: string; result?: unknown }>('calendar')
+          if (previous?.status === 'created') return { success: true, data: previous.result as T }
+          if (previous) return { success: false, error: 'Calendar outcome uncertain; check Google Calendar.' }
+          // Persist BEFORE the external write. A crash or timeout is ambiguous,
+          // never an invitation to create the same event again.
+          await this.state.storage.put('calendar', { status: 'pending' })
+          const result = await callIntegration<T>(endpoint, body)
+          if (result.success) {
+            if ((result.data as Record<string, unknown>)?.requiresOAuth === true) await this.state.storage.delete('calendar')
+            else await this.state.storage.put('calendar', { status: 'created', result: result.data })
+          }
+          return result
+        }
+        const key = `attempts:${endpoint}`
+        const count = await this.state.storage.get<number>(key) ?? 0
+        if (count >= 8) return { success: false, error: 'Integration attempt limit reached.' }
+        await this.state.storage.put(key, count + 1)
+        return callIntegration<T>(endpoint, body)
+      }
       return Response.json(await execute(name, { userId, params, tools }))
     })
     this.tail = run.catch(() => undefined)

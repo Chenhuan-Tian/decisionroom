@@ -18,6 +18,9 @@ const PORT = Number(process.env.DEEPSPACE_PORT ?? 5173)
 const BASE_URL = `http://127.0.0.1:${PORT}`
 
 export default defineConfig({
+  // SDK auth-state cache writes are not atomic across workers. The small
+  // authenticated suite shares accounts deliberately; run it sequentially.
+  workers: 1,
   testDir: '.',
   testMatch: '**/*.spec.ts',
   timeout: 30_000,

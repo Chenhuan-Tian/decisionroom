@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('API tests', () => {
+  test('actions require a verified bearer token', async ({ request }) => {
+    const response = await request.post('/api/actions/finalize', { data: { roomId: '12345678-1234-4234-a234-123456789abc', optionId: 'option-1' } })
+    expect(response.status()).toBe(401)
+  })
+  test('the general integration proxy cannot bypass room budgets', async ({ request }) => {
+    for (const endpoint of ['exa/search', 'openai/chat-completion', 'google/calendar-create-event', 'anthropic/chat-completion']) {
+      const response = await request.post(`/api/integrations/${endpoint}`, { data: {} })
+      expect(response.status()).toBe(403)
+    }
+  })
   test('auth proxy forwards to auth worker', async ({ request }) => {
     const res = await request.get('/api/auth/ok')
     expect(res.ok()).toBeTruthy()

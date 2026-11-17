@@ -12,10 +12,11 @@ function collection(name: string, columns: ColumnDefinition[]): CollectionSchema
 }
 export const decisionSchemas: CollectionSchema[] = [
   collection('rooms', ['ownerId', 'question', 'constraints', 'status', 'decision', 'rationale', 'decidedAt', 'snapshotId'].map(plain).concat(json('options'))),
-  { ...collection('team_members', [plain('userId'), plain('status'), plain('displayName')]), uniqueOn: ['teamId', 'userId'] },
+  { ...collection('team_members', [{ ...plain('userId'), userBound: true, immutable: true }, plain('status'), plain('displayName')]), uniqueOn: ['teamId', 'userId'] },
   collection('evidence', ['optionId', 'title', 'url', 'note'].map(plain)),
-  { ...collection('votes', ['userId', 'optionId', 'reason'].map(plain)), uniqueOn: ['teamId', 'userId'] },
+  { ...collection('votes', [{ ...plain('userId'), userBound: true, immutable: true }, plain('optionId'), plain('reason')]), uniqueOn: ['teamId', 'userId'] },
   collection('snapshots', [plain('inputSignature'), plain('summary'), json('comparison')]),
+  collection('reviews', ['userId', 'startsAt', 'status', 'eventUrl'].map(plain)),
   { name: 'invitations', columns: ['teamId', 'tokenHash', 'expiresAt'].map(plain),
     permissions: { '*': closed, viewer: closed, member: closed, admin: closed } },
 ]

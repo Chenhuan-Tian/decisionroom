@@ -12,6 +12,7 @@ export type Claim = { text: string; evidenceIds: string[] }
 export type Comparison = { optionId: string; advantages: Claim[]; concerns: Claim[]; unknowns: string[] }
 export type Snapshot = { teamId: string; inputSignature: string; comparison: Comparison[]; summary: string }
 export type Invitation = { teamId: string; tokenHash: string; expiresAt: string }
+export type Review = { teamId: string; userId: string; startsAt: string; status: string; eventUrl: string }
 
 export class DomainError extends Error {}
 export function ensure(condition: unknown, message: string): asserts condition {

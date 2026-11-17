@@ -32,7 +32,7 @@ test.skip(
 )
 
 test('each browser renders its own signed-in account', async ({ users }) => {
-  const [a, b] = await users(2)
+  const [a, b] = await users(2, process.env.DR_TEST_LABEL ? { label: process.env.DR_TEST_LABEL } : undefined)
 
   // /home is dynamic (under src/pages/(app)/), so it mounts the nav shell;
   // '/' is the static landing and has no navigation.
@@ -55,7 +55,6 @@ test('each browser renders its own signed-in account', async ({ users }) => {
     // visibility.)
     await expect(user.page.getByTestId('nav-user-name')).toHaveText(/\S/, { timeout: 15_000 })
 
-    await user.page.getByRole('button', { name: 'Account menu' }).click()
     await expect(user.page.getByTestId('nav-user-email')).toHaveText(user.email, {
       timeout: 15_000,
     })
@@ -63,7 +62,7 @@ test('each browser renders its own signed-in account', async ({ users }) => {
 })
 
 test('API status page renders loading success and error states', async ({ users }) => {
-  const [user] = await users(1)
+  const [user] = await users(1, process.env.DR_TEST_LABEL ? { label: process.env.DR_TEST_LABEL } : undefined)
   let shouldFail = false
   let requestCount = 0
 
@@ -105,7 +104,7 @@ test('API status page renders loading success and error states', async ({ users 
 })
 
 test('API status page shows local retry after first-load API failure', async ({ users }) => {
-  const [user] = await users(1)
+  const [user] = await users(1, process.env.DR_TEST_LABEL ? { label: process.env.DR_TEST_LABEL } : undefined)
   let requestCount = 0
 
   await user.page.route('**/api/integrations', async (route) => {

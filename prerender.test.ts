@@ -1,5 +1,4 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { build, type ResolvedConfig } from 'vite'
@@ -17,7 +16,11 @@ afterEach(() => {
 })
 
 async function buildPages(noindex: boolean) {
-  const root = mkdtempSync(join(tmpdir(), 'scaffold-seo-'))
+  // Keep Vite's dynamic import under the checkout. Windows sandbox temp paths
+  // can contain # and braces, which Vite's file-URL module loader misresolves.
+  const tempRoot = join(process.cwd(), '.local-runtime', 'test-temp')
+  mkdirSync(tempRoot, { recursive: true })
+  const root = mkdtempSync(join(tempRoot, 'scaffold-seo-'))
   dirs.push(root)
   const client = join(root, 'dist/client')
   mkdirSync(client, { recursive: true })

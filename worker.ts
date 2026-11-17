@@ -126,6 +126,13 @@ export type AppContext = { Bindings: Env }
 
 const app = new Hono<AppContext>()
 app.use('/api/*', cors())
+// Paid research goes through membership-checked, budgeted actions only.
+app.use('/api/integrations/*', async (c, next) => {
+  if (c.req.path !== '/api/integrations/status' && !c.req.path.startsWith('/api/integrations/oauth/')) {
+    return c.json({ success: false, error: 'Integrations are available through room actions only.' }, 403)
+  }
+  await next()
+})
 // A Durable Object exists only once something fetches it, and the CronRoom
 // arms its alarm in that first fetch — so wake it from the request path, or a
 // deployed schedule waits for a visitor. Once per isolate; no-op without tasks.

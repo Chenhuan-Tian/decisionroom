@@ -23,6 +23,7 @@ import Navigation from '../../components/Navigation'
 import { useToast } from '@/components/ui'
 import { APP_NAME, SCOPE_ID } from '../../constants'
 import { schemas } from '../../schemas'
+import '../../decisionroom/decisionroom.css'
 
 export default function AppLayout() {
   return (
@@ -31,9 +32,9 @@ export default function AppLayout() {
           when <Seo> unmounts, so every route without <Seo> sets its own. */}
       <title>{APP_NAME}</title>
       <AuthBoot>
-        <div className="flex h-screen flex-col bg-background overflow-hidden">
+        <div className="dr-site flex min-h-screen flex-col">
           <Navigation />
-          <main className="flex-1 overflow-y-auto min-h-0">
+          <main className="flex-1 min-h-0">
             <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>}>
               <Outlet />
             </Suspense>
