@@ -1,27 +1,17 @@
-# Portal submission draft
+# Portal submission
 
-Replace the live URL after deployment and complete the personal verification paragraph before submitting. Do not submit unfinished placeholders as verified claims.
-
-**Live URL:** pending verified deployment
+**Live URL:** https://decisionroom.app.space
 
 **Repository:** https://github.com/Chenhuan-Tian/decisionroom
 
-**What I built**
+DecisionRoom helps a small group make a choice with a record of why: frame two or three options, save evidence, compare tradeoffs, vote, and record the host's final rationale. Changing evidence invalidates older AI comparisons; finalization freezes evidence and votes. The decision brief exports as Markdown.
 
-DecisionRoom is a private decision workspace for a small group: frame two or three options, save evidence, generate a comparison with source references, vote, and record the host's final rationale. Evidence changes invalidate old comparisons; finalized decisions freeze evidence and votes. A Markdown brief preserves the reasoning, and an optional Calendar review provides a date to revisit it.
+I used DeepSpace authentication, realtime RecordRoom storage, native team RBAC, server actions, and a per-room Durable Object for ordered state transitions. Three external integrations serve the workflow: Exa finds candidate sources, OpenAI compares saved evidence with validated citation IDs, and Google Calendar creates an optional review event using the caller's own OAuth account. Media, payments, and extra messaging integrations would not add value here.
 
-**DeepSpace choices**
+My main tradeoff was bounded, human-reviewed evidence over autonomous research. AI cannot choose the final answer, and valid citation IDs do not prove that a claim is true. A room waits during generation; background JobRoom execution would be the next scaling step. Ambiguous Calendar failures disable automatic retries to avoid duplicate events.
 
-The app uses DeepSpace authentication, realtime RecordRoom storage, native team RBAC, server actions and a per-room Durable Object to serialize state transitions. Its three external integrations are Exa for candidate sources, OpenAI for comparisons based on saved notes, and Google Calendar for a review event. Google uses caller billing/OAuth so each host acts on their own account. Additional media, payment or messaging integrations would not improve this decision workflow.
+The coding agent implemented the interface, backend, tests, and documentation. I directed the scope, completed platform setup, and ran verification: 24 unit tests and 14 browser/API tests passed, including a real three-user privacy/collaboration flow. The first run exposed an SDK authentication-cache race and a test locator issue; after correction I reran the complete suite successfully. I also exercised the deployed core workflow and reported no issues.
 
-**Main tradeoff**
+Real Google Calendar consent/event creation is not separately confirmed in the verification record. Membership removal and recurring reviews are intentionally outside scope. Next I would verify Calendar explicitly, add reconciliation for uncertain writes, and move long generation into background jobs.
 
-I chose a bounded, human-reviewed workflow over autonomous research. Options are fixed, evidence is capped, and AI claims must cite known sources, while factual support remains a human check. A room's writes wait while generation runs; at this scale that simplifies consistent finalization. Calendar failures with an uncertain outcome do not automatically retry, because the exposed create contract provides no client idempotency key. The next step would be background generation and explicit Calendar reconciliation.
-
-**Agent work and my verification**
-
-The agent implemented the interface, backend rules, tests and documentation. I directed the project scope, completed platform setup, and ran the native verification suite: 24 unit tests and 14 browser/API tests passed, including a real three-user flow. The first run exposed an SDK authentication-cache race and a test locator error; after the agent corrected them, I reran the full suite successfully. [Add the live-provider paths you personally inspected and any changes you made. See VERIFICATION.md.]
-
-**Remaining limitations**
-
-[Carry forward any unverified provider/production paths from VERIFICATION.md.] Membership removal and recurring review are intentionally outside this submission. The app validates citation identity, not truth or semantic entailment.
+The repository is private; ensure the reviewers have access before submitting. Detailed evidence and limits: [VERIFICATION.md](VERIFICATION.md).

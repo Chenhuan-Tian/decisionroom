@@ -7,13 +7,13 @@ Last updated: November 17, 2026 (America/New_York).
 | TypeScript, `tsc --noEmit` | Passed after the final implementation. |
 | Unit tests, `npm run test:unit` | 24 passed across 4 files. Includes service authorization, native SDK read/write policies, bounded/idempotent evidence, caller-bound votes, stale comparisons, invalid citations, Calendar OAuth/ambiguity and prerendering. |
 | Production build, `npm run build` | Passed after the final implementation; client and Worker bundles plus prerendered landing generated. |
-| Browser landing | Rendered and visually inspected in the local browser. |
+| Browser landing | Local and deployed landing, production workspace and sign-in entry inspected. Production desktop and 390px mobile screenshots captured; mobile content width equals viewport width (no horizontal overflow). |
 | Authenticated browser workflow | Passed through the real SDK browser suite, run by the applicant from a network-enabled terminal. |
 | Native SDK three-user end-to-end test | Passed: private room exclusion, invitation join, realtime evidence, changing a single vote, rejected outsider/member actions, host finalization, frozen writes, persistence after reload and actual Markdown export content. The full browser/API suite passed 14/14 in 27.5 seconds. |
-| Real Exa search | Not yet verified. Contract inspected via CLI. |
-| Real OpenAI comparison | Not yet verified. Contract inspected via CLI; invalid citations tested with synthetic provider output. |
-| Real Google OAuth and event creation | Not yet verified. Contract inspected; OAuth-required, ambiguous failures and repeated confirmed responses tested at the service boundary. No real calendar event has been created by the agent. |
-| Deployment | Pending. |
+| Real Exa search | Applicant reported no issues after being asked to exercise the deployed search/save flow. Contract inspected via CLI; the agent did not inspect individual provider logs. |
+| Real OpenAI comparison | Applicant reported no issues after being asked to generate a deployed comparison. Contract inspected via CLI; invalid citations tested with synthetic provider output. The agent did not independently validate semantic entailment. |
+| Real Google OAuth and event creation | Not separately confirmed. It was an optional manual acceptance step; the applicant's general “no issues” response is not counted as explicit confirmation of a real event. Contract inspected; OAuth-required, ambiguous failures and repeated confirmed responses tested at the service boundary. No real calendar event has been created by the agent. |
+| Deployment | Passed: https://decisionroom.app.space, release `rel_01M7KZ6QGM2YDZMYY05SRPQD0K`, clean source. DeepSpace confirmed serving/dataPlane, GitHub source authority and retained rollback bundle. |
 
 The initial scaffold prerender tests failed because Windows sandbox temp paths contained `#` and braces, which Vite's file-URL loader misresolved. Their temporary fixtures now live under ignored `.local-runtime/test-temp`; both tests pass. This changed the test fixture location, not application behavior or assertions.
 

@@ -4,7 +4,9 @@ A good decision has receipts. DecisionRoom gives a small group one place to fram
 
 Repository: https://github.com/Chenhuan-Tian/decisionroom
 
-Live URL: pending the first verified DeepSpace deployment. Do not treat a guessed app.space hostname as a successful deployment.
+Live URL: https://decisionroom.app.space
+
+Deployed on November 17, 2026. DeepSpace confirmed serving and data-plane health, clean source, and GitHub authority. Type checking, 24 unit tests and 14 browser/API tests passed. Production landing, workspace and sign-in entry were checked in a browser, including a 390px mobile layout. See the verification report for the distinction between these checks and real-provider/manual acceptance.
 
 ## The finished workflow
 
